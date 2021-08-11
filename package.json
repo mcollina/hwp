@@ -4,7 +4,7 @@
   "description": "HighWatermark Processing with Async Iterators",
   "main": "index.js",
   "scripts": {
-    "test": "standard && tap test.js"
+    "test": "standard && tap test/*.js"
   },
   "precommit": "test",
   "repository": {

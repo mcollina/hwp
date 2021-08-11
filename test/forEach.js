@@ -2,7 +2,7 @@
 
 const { test } = require('tap')
 const { promisify } = require('util')
-const hwp = require('.')
+const hwp = require('..')
 
 const immediate = promisify(setImmediate)
 
