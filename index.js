@@ -75,7 +75,11 @@ async function map (iterator, func, n = 16) {
 }
 
 async function forEach (iterator, func, n = 16) {
-  await map(iterator, func, n)
+  iterator = mapIterator(iterator, func, n)
+  // eslint-disable-next-line no-unused-vars
+  for await (const item of iterator) {
+    // Do nothing.
+  }
 }
 
 module.exports.forEach = forEach
