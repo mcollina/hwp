@@ -3,11 +3,20 @@
 const assert = require('assert')
 
 async function * mapIterator (iterator, func, n = 16) {
+  // This works by creating two separate "processes" one that
+  // reads from the source iterator and enqueues tasks into the
+  // promises queue and another "process" that waits for tasks
+  // in the queue to finish and yield them back to the caller.
+
   const promises = []
 
   let next
   let done = false
+  let error
 
+  // pump reads from the source and invokes the transform
+  // func so that the promises queue always has n number
+  // of items.
   async function pump () {
     try {
       for await (const item of iterator) {
@@ -39,6 +48,8 @@ async function * mapIterator (iterator, func, n = 16) {
           assert(done || promises.length < n)
         }
       }
+    } catch (err) {
+      error = err
     } finally {
       done = true
       if (next) {
@@ -51,6 +62,8 @@ async function * mapIterator (iterator, func, n = 16) {
   pump()
 
   try {
+    // sequentially read and resolve each item in
+    // the promise list
     while (true) {
       while (promises.length > 0) {
         yield await promises[0]
@@ -59,6 +72,10 @@ async function * mapIterator (iterator, func, n = 16) {
           next()
           next = null
         }
+      }
+
+      if (error) {
+        throw error
       }
 
       if (done) {
