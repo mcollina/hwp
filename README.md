@@ -15,7 +15,7 @@ npm i hwp
 
 ```js
 import { forEach, map, mapIterator, mapper } from 'hwp'
-import { pipeline } from 'stream/promise'
+import { pipeline } from 'stream/promises'
 
 const expected = ['a', 'b', 'c']
 
