@@ -14,7 +14,8 @@ npm i hwp
 ## Usage
 
 ```js
-import { forEach, map, mapIterator } from 'hwp'
+import { forEach, map, mapIterator, mapper } from 'hwp'
+import { pipeline } from 'stream/promise'
 
 const expected = ['a', 'b', 'c']
 
@@ -41,6 +42,16 @@ console.log(await map(something(), async function (item) {
   // call an async function here instead
   return item.toUpperCase()
 }), 16)
+
+await pipeline(
+  something(),
+  mapper(item => item.toUpperCase(), 16),
+  async function (source) {
+    for await (const item of source) {
+      console.log(item)
+    }
+  }
+)
 ```
 
 ## License

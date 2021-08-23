@@ -64,3 +64,4 @@ async function map (iterator, func, n = 16) {
 module.exports.forEach = forEach
 module.exports.mapIterator = mapIterator
 module.exports.map = map
+module.exports.mapper = (func, n = 16) => iterator => mapIterator(iterator, func, n)
