@@ -29,32 +29,63 @@ async function forEach (iterator, func, n = 16) {
 }
 
 async function * mapIterator (iterator, func, n = 16) {
-  const limit = pLimit(n)
-  let promises = []
-  let _err
-  for await (const item of iterator) {
-    if (_err) {
-      throw _err
-    }
-    const p = limit(func, item)
+  const promises = []
+  let next
 
-    promises.push(p)
-    // fork the promise chain
-    p
-      .catch((err) => { _err = err })
+  let done = false
 
-    if (limit.pendingCount > 1) {
-      for (const promise of promises) {
-        yield await promise
+  async function pump () {
+    const limit = pLimit(n)
+
+    for await (const item of iterator) {
+      if (done) {
+        return
       }
-      promises = []
+
+      const p = limit(func, item)
+      promises.push(p)
+      p.catch(() => {
+        done = true
+      })
+
+      if (next) {
+        next()
+        next = null
+      }
+
+      if (promises.length >= n) {
+        await new Promise(resolve => {
+          next = resolve
+        })
+      }
+    }
+
+    done = true
+    if (next) {
+      next()
+      next = null
     }
   }
 
-  for (const promise of promises) {
-    yield await promise
+  pump()
+
+  while (true) {
+    while (promises.length > 0) {
+      yield await promises.shift()
+      if (next) {
+        next()
+        next = null
+      }
+    }
+
+    if (done) {
+      return
+    }
+
+    await new Promise(resolve => {
+      next = resolve
+    })
   }
-  promises = []
 }
 
 async function map (iterator, func, n = 16) {
