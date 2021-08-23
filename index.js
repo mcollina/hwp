@@ -1,7 +1,5 @@
 'use strict'
 
-const pLimit = require('p-limit')
-
 async function * mapIterator (iterator, func, n = 16) {
   const promises = []
 
@@ -9,14 +7,18 @@ async function * mapIterator (iterator, func, n = 16) {
   let done = false
 
   async function pump () {
-    const limit = pLimit(n)
-
     for await (const item of iterator) {
       if (done) {
         return
       }
 
-      const p = limit(func, item)
+      let p
+      try {
+        p = func(item)
+      } catch (err) {
+        p = Promise.reject(err)
+      }
+
       promises.push(p)
       p.catch(() => {
         done = true
@@ -45,7 +47,8 @@ async function * mapIterator (iterator, func, n = 16) {
 
   while (true) {
     while (promises.length > 0) {
-      yield await promises.shift()
+      yield await promises[0]
+      promises.shift()
       if (next) {
         next()
         next = null

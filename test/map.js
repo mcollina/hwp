@@ -115,7 +115,7 @@ test('first element errors', async (t) => {
     t.fail('must throw')
   } catch (err) {
     // This is 3 in this example
-    t.equal(started > 1, true)
+    t.equal(started === 1, true)
   }
 })
 
