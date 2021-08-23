@@ -158,6 +158,7 @@ test('first element errors', async (t) => {
     const first = started === 0
     started++
     if (first) {
+      await immediate()
       throw new Error('kaboom')
     }
     return item * 2
@@ -170,7 +171,7 @@ test('first element errors', async (t) => {
     t.fail('must throw')
   } catch (err) {
     // This is 3 in this example
-    t.equal(started === 1, true)
+    t.equal(started > 1, true)
   }
 })
 
