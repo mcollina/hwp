@@ -99,7 +99,7 @@ test('errors with a batch', async (t) => {
     })
     t.fail('must throw')
   } catch (err) {
-    t.equal(started > 16, true)
+    t.equal(started === 16, true)
   }
 })
 
@@ -154,6 +154,6 @@ test('first element errors', async (t) => {
     })
     t.fail('must throw')
   } catch (err) {
-    t.equal(started > 16, true)
+    t.equal(started === 16, true)
   }
 })

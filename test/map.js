@@ -6,7 +6,45 @@ const hwp = require('..')
 
 const immediate = promisify(setImmediate)
 
-test('process an async iterator mapper', async (t) => {
+test('src errors', async (t) => {
+  async function * something () {
+    throw new Error('kaboom')
+  }
+
+  const res = hwp.mapIterator(something(), function (item) {
+  })
+
+  try {
+    // eslint-disable-next-line no-unused-vars
+    for await (const item of res) {
+      // eslint-disable-next-line
+    }
+    t.fail('must throw')
+  } catch (err) {
+    t.equal(err.message, 'kaboom')
+  }
+})
+
+test('sync func errors', async (t) => {
+  async function * something () {
+    yield null
+  }
+
+  const res = hwp.mapIterator(something(), function (item) {
+    throw new Error('kaboom')
+  })
+
+  try {
+    for await (const item of res) {
+      console.log(item)
+    }
+    t.fail('must throw')
+  } catch (err) {
+    t.equal(err.message, 'kaboom')
+  }
+})
+
+test('do not delay output', async (t) => {
   const expected = ['a', 'b', 'c']
   const uppercased = [...expected.map((s) => s.toUpperCase())]
 
@@ -15,6 +53,24 @@ test('process an async iterator mapper', async (t) => {
     yield * toSend
   }
 
+  const res = hwp.mapIterator(something(), async function (item) {
+    t.equal(item, expected.shift())
+    return item.toUpperCase()
+  }, 32)
+
+  for await (const item of res) {
+    t.equal(item, uppercased.shift())
+  }
+})
+
+test('process an async iterator mapper', async (t) => {
+  const expected = ['a', 'b', 'c']
+  const uppercased = [...expected.map((s) => s.toUpperCase())]
+
+  async function * something () {
+    const toSend = [...expected]
+    yield * toSend
+  }
   const res = hwp.mapper(async function (item) {
     t.equal(item, expected.shift())
     return item.toUpperCase()
@@ -103,6 +159,7 @@ test('first element errors', async (t) => {
     const first = started === 0
     started++
     if (first) {
+      await immediate()
       throw new Error('kaboom')
     }
     return item * 2

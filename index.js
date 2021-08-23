@@ -1,60 +1,99 @@
 'use strict'
 
-const pLimit = require('p-limit')
-
-async function forEach (iterator, func, n = 16) {
-  const limit = pLimit(n)
-  const promises = new Set()
-  let _err
-  for await (const chunk of iterator) {
-    if (_err) {
-      throw _err
-    }
-    const p = limit(func, chunk)
-
-    if (limit.pendingCount > 1) {
-      await p
-    } else {
-      promises.add(p)
-      // fork the promise chain
-      p
-        .catch((err) => { _err = err })
-        .finally(() => {
-          promises.delete(p)
-        })
-    }
-  }
-
-  await Promise.all(promises)
-}
+const assert = require('assert')
 
 async function * mapIterator (iterator, func, n = 16) {
-  const limit = pLimit(n)
-  let promises = []
-  let _err
-  for await (const item of iterator) {
-    if (_err) {
-      throw _err
-    }
-    const p = limit(func, item)
+  // This works by creating two separate "processes" one that
+  // reads from the source iterator and enqueues tasks into the
+  // promises queue and another "process" that waits for tasks
+  // in the queue to finish and yield them back to the caller.
 
-    promises.push(p)
-    // fork the promise chain
-    p
-      .catch((err) => { _err = err })
+  const promises = []
 
-    if (limit.pendingCount > 1) {
-      for (const promise of promises) {
-        yield await promise
+  let next
+  let done = false
+  let error
+
+  // pump reads from the source and invokes the transform
+  // func so that the promises queue always has n number
+  // of items.
+  async function pump () {
+    try {
+      for await (const item of iterator) {
+        if (done) {
+          return
+        }
+
+        let p
+        try {
+          p = func(item)
+        } catch (err) {
+          p = Promise.reject(err)
+        }
+
+        promises.push(p)
+        p.catch(() => {
+          done = true
+        })
+
+        if (next) {
+          next()
+          next = null
+        }
+
+        if (!done && promises.length >= n) {
+          await new Promise(resolve => {
+            next = resolve
+          })
+          assert(done || promises.length < n)
+        }
       }
-      promises = []
+    } catch (err) {
+      error = err
+    } finally {
+      done = true
+      if (next) {
+        next()
+        next = null
+      }
     }
   }
 
-  for (const promise of promises) {
-    yield await promise
+  pump()
+
+  try {
+    // sequentially read and resolve each item in
+    // the promise list
+    while (true) {
+      while (promises.length > 0) {
+        yield await promises[0]
+        promises.shift()
+        if (next) {
+          next()
+          next = null
+        }
+      }
+
+      if (error) {
+        throw error
+      }
+
+      if (done) {
+        return
+      }
+
+      await new Promise(resolve => {
+        next = resolve
+      })
+      assert(done || promises.length > 0)
+    }
+  } finally {
+    done = true
+    if (next) {
+      next()
+      next = null
+    }
   }
-  promises = []
 }
 
 async function map (iterator, func, n = 16) {
@@ -64,6 +103,14 @@ async function map (iterator, func, n = 16) {
     results.push(item)
   }
   return results
+}
+
+async function forEach (iterator, func, n = 16) {
+  iterator = mapIterator(iterator, func, n)
+  // eslint-disable-next-line no-unused-vars
+  for await (const item of iterator) {
+    // Do nothing.
+  }
 }
 
 module.exports.forEach = forEach
