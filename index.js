@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('assert')
+const AbortController = require('abort-controller')
 
 async function * mapIterator (iterator, func, n = 16) {
   // This works by creating two separate "processes" one that
@@ -9,6 +10,7 @@ async function * mapIterator (iterator, func, n = 16) {
   // in the queue to finish and yield them back to the caller.
 
   const promises = []
+  const ac = new AbortController()
 
   let next
   let done = false
@@ -26,7 +28,7 @@ async function * mapIterator (iterator, func, n = 16) {
 
         let p
         try {
-          p = func(item)
+          p = func(item, { signal: ac.signal })
         } catch (err) {
           p = Promise.reject(err)
         }
@@ -88,6 +90,8 @@ async function * mapIterator (iterator, func, n = 16) {
       assert(done || promises.length > 0)
     }
   } finally {
+    ac.abort()
+
     done = true
     if (next) {
       next()

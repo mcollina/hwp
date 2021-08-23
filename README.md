@@ -24,28 +24,27 @@ async function * something () {
   yield * toSend
 }
 
-await forEach(something(), async function (item) {
-  // call an async function here instead
-  console.log(item)
+await forEach(something(), async function (item, { signal }) {
+  return someAsyncFunction(item, { signal })
 }, 16)
 
-const res = mapIterator(something(), async function (item) {
-  // call an async function here instead
-  return item.toUpperCase()
+const res = mapIterator(something(), async function (item, { signal }) {
+  return someAsyncFunction(item, { signal })
 }, 16)
 
 for await (const item of res) {
   console.log(item)
 }
 
-console.log(await map(something(), async function (item) {
-  // call an async function here instead
-  return item.toUpperCase()
+console.log(await map(something(), async function (item, { signal }) {
+  return someAsyncFunction(item, { signal })
 }), 16)
 
 await pipeline(
   something(),
-  mapper(item => item.toUpperCase(), 16),
+  mapper((item, { signal }) => {
+    return someAsyncFunction(item, { signal })
+  }, 16),
   async function (source) {
     for await (const item of source) {
       console.log(item)

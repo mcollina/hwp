@@ -29,5 +29,8 @@
     "@fastify/pre-commit": "^2.0.2",
     "standard": "^16.0.3",
     "tap": "^15.0.9"
+  },
+  "dependencies": {
+    "abort-controller": "^3.0.0"
   }
 }
