@@ -6,6 +6,36 @@ const hwp = require('..')
 
 const immediate = promisify(setImmediate)
 
+test('abort signal', async (t) => {
+  t.plan(2)
+
+  const uppercased = ['A']
+
+  async function * something () {
+    const toSend = ['a', 'b', 'c']
+    yield * toSend
+  }
+
+  const res = hwp.mapIterator(something(), async function (item, { signal }) {
+    if (item === 'b') {
+      return new Promise((resolve) => {
+        signal.addEventListener('abort', () => {
+          resolve()
+          t.pass()
+        })
+      })
+    } else {
+      return item.toUpperCase()
+    }
+  }, 32)
+
+  // eslint-disable-next-line no-unreachable-loop
+  for await (const item of res) {
+    t.equal(item, uppercased.shift())
+    break
+  }
+})
+
 test('src errors', async (t) => {
   async function * something () {
     throw new Error('kaboom')
