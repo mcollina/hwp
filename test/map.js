@@ -6,6 +6,25 @@ const hwp = require('..')
 
 const immediate = promisify(setImmediate)
 
+test('sync func errors', async (t) => {
+  async function * something () {
+    yield null
+  }
+
+  const res = hwp.mapIterator(something(), function (item) {
+    throw new Error('kaboom')
+  })
+
+  try {
+    for await (const item of res) {
+      console.log(item)
+    }
+    t.fail('must throw')
+  } catch (err) {
+    t.equal(err.message, 'kaboom')
+  }
+})
+
 test('do not delay output', async (t) => {
   const expected = ['a', 'b', 'c']
   const uppercased = [...expected.map((s) => s.toUpperCase())]
