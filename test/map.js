@@ -6,6 +6,24 @@ const hwp = require('..')
 
 const immediate = promisify(setImmediate)
 
+test('src errors', async (t) => {
+  async function * something () {
+    throw new Error('kaboom')
+  }
+
+  const res = hwp.mapIterator(something(), function (item) {
+  })
+
+  try {
+    for await (const item of res) {
+      console.log(item)
+    }
+    t.fail('must throw')
+  } catch (err) {
+    t.equal(err.message, 'kaboom')
+  }
+})
+
 test('sync func errors', async (t) => {
   async function * something () {
     yield null
