@@ -15,8 +15,9 @@ test('src errors', async (t) => {
   })
 
   try {
+    // eslint-disable-next-line no-unused-vars
     for await (const item of res) {
-      console.log(item)
+      // eslint-disable-next-line
     }
     t.fail('must throw')
   } catch (err) {
