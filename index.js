@@ -44,12 +44,17 @@ async function * mapIterator (iterator, func, n = 16) {
       .catch((err) => { _err = err })
 
     if (limit.pendingCount > 1) {
-      yield * await Promise.all(promises)
+      for (const promise of promises) {
+        yield await promise
+      }
       promises = []
     }
   }
 
-  yield * await Promise.all(promises)
+  for (const promise of promises) {
+    yield await promise
+  }
+  promises = []
 }
 
 async function map (iterator, func, n = 16) {
