@@ -1,5 +1,7 @@
 'use strict'
 
+const assert = require('assert')
+
 async function * mapIterator (iterator, func, n = 16) {
   const promises = []
 
@@ -7,61 +9,73 @@ async function * mapIterator (iterator, func, n = 16) {
   let done = false
 
   async function pump () {
-    for await (const item of iterator) {
-      if (done) {
-        return
+    try {
+      for await (const item of iterator) {
+        if (done) {
+          return
+        }
+
+        let p
+        try {
+          p = func(item)
+        } catch (err) {
+          p = Promise.reject(err)
+        }
+
+        promises.push(p)
+        p.catch(() => {
+          done = true
+        })
+
+        if (next) {
+          next()
+          next = null
+        }
+
+        if (!done && promises.length >= n) {
+          await new Promise(resolve => {
+            next = resolve
+          })
+          assert(done || promises.length < n)
+        }
       }
-
-      let p
-      try {
-        p = func(item)
-      } catch (err) {
-        p = Promise.reject(err)
-      }
-
-      promises.push(p)
-      p.catch(() => {
-        done = true
-      })
-
+    } finally {
+      done = true
       if (next) {
         next()
         next = null
       }
-
-      if (promises.length >= n) {
-        await new Promise(resolve => {
-          next = resolve
-        })
-      }
-    }
-
-    done = true
-    if (next) {
-      next()
-      next = null
     }
   }
 
   pump()
 
-  while (true) {
-    while (promises.length > 0) {
-      yield await promises[0]
-      promises.shift()
-      if (next) {
-        next()
-        next = null
+  try {
+    while (true) {
+      while (promises.length > 0) {
+        yield await promises[0]
+        promises.shift()
+        if (next) {
+          next()
+          next = null
+        }
       }
-    }
 
-    if (done) {
-      return
-    }
+      if (done) {
+        return
+      }
 
-    await new Promise(resolve => {
-      next = resolve
-    })
+      await new Promise(resolve => {
+        next = resolve
+      })
+      assert(done || promises.length > 0)
+    }
+  } finally {
+    done = true
+    if (next) {
+      next()
+      next = null
+    }
   }
 }
 
