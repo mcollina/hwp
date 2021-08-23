@@ -2,7 +2,6 @@
 
 const { test } = require('tap')
 const { promisify } = require('util')
-const { pipeline } = require('stream')
 const hwp = require('..')
 
 const immediate = promisify(setImmediate)
@@ -16,14 +15,10 @@ test('process an async iterator mapper', async (t) => {
     yield * toSend
   }
 
-  const res = pipeline(
-    something(),
-    hwp.mapper(async function (item) {
-      t.equal(item, expected.shift())
-      return item.toUpperCase()
-    }),
-    () => {}
-  )
+  const res = hwp.mapper(async function (item) {
+    t.equal(item, expected.shift())
+    return item.toUpperCase()
+  })(something())
 
   for await (const item of res) {
     t.equal(item, uppercased.shift())
