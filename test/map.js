@@ -6,6 +6,25 @@ const hwp = require('..')
 
 const immediate = promisify(setImmediate)
 
+test('process an async iterator mapper', async (t) => {
+  const expected = ['a', 'b', 'c']
+  const uppercased = [...expected.map((s) => s.toUpperCase())]
+
+  async function * something () {
+    const toSend = [...expected]
+    yield * toSend
+  }
+
+  const res = hwp.mapper(async function (item) {
+    t.equal(item, expected.shift())
+    return item.toUpperCase()
+  })(something())
+
+  for await (const item of res) {
+    t.equal(item, uppercased.shift())
+  }
+})
+
 test('process an async iterator', async (t) => {
   const expected = ['a', 'b', 'c']
   const uppercased = [...expected.map((s) => s.toUpperCase())]
