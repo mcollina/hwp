@@ -3,9 +3,11 @@
   "version": "0.4.0",
   "description": "HighWatermark Processing with Async Iterators",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "lint": "eslint . --fix",
-    "test": "eslint . && node --test"
+    "test": "eslint . && node --test && npm run test:types",
+    "test:types": "tstyche"
   },
   "precommit": "test",
   "repository": {
@@ -29,6 +31,8 @@
   "devDependencies": {
     "@fastify/pre-commit": "^2.2.0",
     "eslint": "^9.25.1",
-    "neostandard": "^0.12.1"
+    "neostandard": "^0.12.1",
+    "tstyche": "^3.5.0",
+    "typescript": "^5.8.3"
   }
 }

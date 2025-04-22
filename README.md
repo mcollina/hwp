@@ -1,9 +1,11 @@
 # hwp
 
-Consume Async Interators with a highwatermark, i.e. in batches.
-This allow for multiple processing happening in parallel instead of one at a time.
+Consume Async Iterators with a highwatermark, i.e. in batches.
+This allows for multiple processing happening in parallel instead of one at a time.
 
 The default highwatermark is `16`.
+
+TypeScript type definitions are included.
 
 ## Install
 
