@@ -4,7 +4,8 @@
   "description": "HighWatermark Processing with Async Iterators",
   "main": "index.js",
   "scripts": {
-    "test": "standard && tap test/*.js"
+    "lint": "eslint . --fix",
+    "test": "eslint . && node --test"
   },
   "precommit": "test",
   "repository": {
@@ -27,10 +28,7 @@
   "homepage": "https://github.com/mcollina/hwp#readme",
   "devDependencies": {
     "@fastify/pre-commit": "^2.0.2",
-    "standard": "^17.0.0",
-    "tap": "^16.0.0"
-  },
-  "dependencies": {
-    "abort-controller": "^3.0.0"
+    "eslint": "^9.25.1",
+    "neostandard": "^0.12.1"
   }
 }

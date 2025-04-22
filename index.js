@@ -1,7 +1,6 @@
 'use strict'
 
 const assert = require('assert')
-const AbortController = require('abort-controller')
 
 async function * mapIterator (iterator, func, n = 16) {
   // This works by creating two separate "processes" one that

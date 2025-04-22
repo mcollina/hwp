@@ -1,159 +1,159 @@
 'use strict'
 
-const { test } = require('tap')
-const { promisify } = require('util')
+const { test, describe } = require('node:test')
+const assert = require('node:assert/strict')
+const { promisify } = require('node:util')
 const hwp = require('..')
 
 const immediate = promisify(setImmediate)
 
-test('process an async iterator', async (t) => {
-  const expected = ['a', 'b', 'c']
+describe('forEach tests', () => {
+  test('process an async iterator', async () => {
+    const expected = ['a', 'b', 'c']
 
-  async function * something () {
-    const toSend = [...expected]
-    yield * toSend
-  }
+    async function * something () {
+      const toSend = [...expected]
+      yield * toSend
+    }
 
-  await hwp.forEach(something(), async function (item) {
-    t.equal(item, expected.shift())
-  })
-})
-
-test('process an async iterator with a batch factor', async (t) => {
-  const expected = []
-
-  for (let i = 0; i < 42; i++) {
-    expected.push(i)
-  }
-
-  async function * something () {
-    const toSend = [...expected]
-    yield * toSend
-  }
-
-  let started = 0
-  let finished = 0
-  let max = 0
-
-  await hwp.forEach(something(), async function (item) {
-    started++
-    // parallelism
-    t.equal(started - finished <= 16, true)
-    t.equal(item, expected.shift())
-    await immediate()
-    finished++
-    max = Math.max(max, started - finished)
+    await hwp.forEach(something(), async function (item) {
+      assert.equal(item, expected.shift())
+    })
   })
 
-  t.equal(max > 1, true)
-})
+  test('process an async iterator with a batch factor', async () => {
+    const expected = []
 
-test('sets highwatermark', async (t) => {
-  const expected = []
+    for (let i = 0; i < 42; i++) {
+      expected.push(i)
+    }
 
-  for (let i = 0; i < 42; i++) {
-    expected.push(i)
-  }
+    async function * something () {
+      const toSend = [...expected]
+      yield * toSend
+    }
 
-  async function * something () {
-    const toSend = [...expected]
-    yield * toSend
-  }
+    let started = 0
+    let finished = 0
+    let max = 0
 
-  let started = 0
-  let finished = 0
-  let max = 0
-
-  await hwp.forEach(something(), async function (item) {
-    started++
-    // parallelism
-    t.equal(started - finished <= 5, true)
-    t.equal(item, expected.shift())
-    await immediate()
-    finished++
-    max = Math.max(max, started - finished)
-  }, 5)
-
-  t.equal(max > 1, true)
-})
-
-test('errors with a batch', async (t) => {
-  const expected = []
-
-  for (let i = 0; i < 42; i++) {
-    expected.push(i)
-  }
-
-  async function * something () {
-    const toSend = [...expected]
-    yield * toSend
-  }
-
-  let started = 0
-
-  try {
     await hwp.forEach(something(), async function (item) {
       started++
+      // parallelism
+      assert.equal(started - finished <= 16, true)
+      assert.equal(item, expected.shift())
       await immediate()
-      throw new Error('kaboom')
+      finished++
+      max = Math.max(max, started - finished)
     })
-    t.fail('must throw')
-  } catch (err) {
-    t.equal(started === 16, true)
-  }
-})
 
-test('errors with a batch lower the highwatermark', async (t) => {
-  const expected = []
+    assert.equal(max > 1, true)
+  })
 
-  for (let i = 0; i < 10; i++) {
-    expected.push(i)
-  }
+  test('sets highwatermark', async () => {
+    const expected = []
 
-  async function * something () {
-    const toSend = [...expected]
-    yield * toSend
-  }
+    for (let i = 0; i < 42; i++) {
+      expected.push(i)
+    }
 
-  let started = 0
+    async function * something () {
+      const toSend = [...expected]
+      yield * toSend
+    }
 
-  try {
+    let started = 0
+    let finished = 0
+    let max = 0
+
     await hwp.forEach(something(), async function (item) {
       started++
+      // parallelism
+      assert.equal(started - finished <= 5, true)
+      assert.equal(item, expected.shift())
       await immediate()
-      throw new Error('kaboom')
-    })
-    t.fail('must throw')
-  } catch (err) {
-    t.equal(started, 10)
-  }
-})
+      finished++
+      max = Math.max(max, started - finished)
+    }, 5)
 
-test('first element errors', async (t) => {
-  const expected = []
+    assert.equal(max > 1, true)
+  })
 
-  for (let i = 0; i < 42; i++) {
-    expected.push(i)
-  }
+  test('errors with a batch', async () => {
+    const expected = []
 
-  async function * something () {
-    const toSend = [...expected]
-    yield * toSend
-  }
+    for (let i = 0; i < 42; i++) {
+      expected.push(i)
+    }
 
-  let started = 0
+    async function * something () {
+      const toSend = [...expected]
+      yield * toSend
+    }
 
-  try {
-    await hwp.forEach(something(), async function (item) {
-      const first = started === 0
-      started++
-      await immediate()
-      if (first) {
+    let started = 0
+
+    await assert.rejects(async () => {
+      await hwp.forEach(something(), async function (item) {
+        started++
+        await immediate()
         throw new Error('kaboom')
-      }
+      })
     })
-    t.fail('must throw')
-  } catch (err) {
-    t.equal(started === 16, true)
-  }
+
+    assert.equal(started === 16, true)
+  })
+
+  test('errors with a batch lower the highwatermark', async () => {
+    const expected = []
+
+    for (let i = 0; i < 10; i++) {
+      expected.push(i)
+    }
+
+    async function * something () {
+      const toSend = [...expected]
+      yield * toSend
+    }
+
+    let started = 0
+
+    await assert.rejects(async () => {
+      await hwp.forEach(something(), async function (item) {
+        started++
+        await immediate()
+        throw new Error('kaboom')
+      })
+    })
+
+    assert.equal(started, 10)
+  })
+
+  test('first element errors', async () => {
+    const expected = []
+
+    for (let i = 0; i < 42; i++) {
+      expected.push(i)
+    }
+
+    async function * something () {
+      const toSend = [...expected]
+      yield * toSend
+    }
+
+    let started = 0
+
+    await assert.rejects(async () => {
+      await hwp.forEach(something(), async function (item) {
+        const first = started === 0
+        started++
+        await immediate()
+        if (first) {
+          throw new Error('kaboom')
+        }
+      })
+    })
+
+    assert.equal(started === 16, true)
+  })
 })
