@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/mcollina/hwp#readme",
   "devDependencies": {
-    "@fastify/pre-commit": "^2.0.2",
+    "@fastify/pre-commit": "^2.2.0",
     "eslint": "^9.25.1",
     "neostandard": "^0.12.1"
   }
