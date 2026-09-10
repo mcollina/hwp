@@ -55,3 +55,44 @@ export function mapper<T, R> (
   func: (item: T, options: HwpOptions) => Promise<R> | R,
   n?: number
 ): (iterator: AsyncIterable<T>) => AsyncGenerator<R, void, unknown>
+
+/**
+ * Batches items from an async iterator into arrays of up to `max` items.
+ * A batch is released as soon as it reaches `max` items, or when the flush
+ * signal fires since the first item of the batch arrived, releasing an
+ * incomplete batch. If `timeout` is omitted the batch is released on the
+ * next `setImmediate` (i.e. as soon as the current event-loop turn ends).
+ * @param iterator The source async iterator
+ * @param max The maximum batch size
+ * @param timeout Milliseconds to wait, or nothing to flush on the next `setImmediate`
+ * @returns A new async iterator that yields arrays of items
+ */
+export function batchIterator<T> (
+  iterator: AsyncIterable<T>,
+  max?: number,
+  timeout?: number
+): AsyncGenerator<T[], void, unknown>
+
+/**
+ * Collects all batches from an async iterator into an array of arrays.
+ * @param iterator The source async iterator
+ * @param max The maximum batch size
+ * @param timeout Milliseconds to wait, or nothing to flush on the next `setImmediate`
+ * @returns A promise that resolves to an array of batches
+ */
+export function batch<T> (
+  iterator: AsyncIterable<T>,
+  max?: number,
+  timeout?: number
+): Promise<T[][]>
+
+/**
+ * Creates a batcher function with a fixed batch size and timeout.
+ * @param max The maximum batch size
+ * @param timeout Milliseconds to wait, or nothing to flush on the next `setImmediate`
+ * @returns A function that takes an async iterator and returns a new async iterator of batches
+ */
+export function batcher (
+  max?: number,
+  timeout?: number
+): <T>(iterator: AsyncIterable<T>) => AsyncGenerator<T[], void, unknown>
