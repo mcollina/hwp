@@ -16,7 +16,7 @@ npm i hwp
 ## Usage
 
 ```js
-import { forEach, map, mapIterator, mapper } from 'hwp'
+import { forEach, map, mapIterator, mapper, batchIterator, batch, batcher } from 'hwp'
 import { pipeline } from 'stream/promises'
 
 const expected = ['a', 'b', 'c']
@@ -53,6 +53,45 @@ await pipeline(
     }
   }
 )
+```
+
+## Batching
+
+The batch operators accumulate items from an async iterator into arrays and
+release them as batches. A batch is released as soon as it reaches `max` items,
+or when the flush signal fires since the first item of the batch arrived
+(releasing an incomplete batch).
+
+The flush signal is a `timeout` in milliseconds. When `timeout` is omitted the
+batch is released on the next `setImmediate`, i.e. as soon as the current
+event-loop turn completes.
+
+```js
+import { batchIterator, batch, batcher } from 'hwp'
+
+async function * something () {
+  const toSend = [1, 2, 3, 4, 5]
+  yield * toSend
+}
+
+// no timeout: flushes on the next setImmediate
+for await (const batch of batchIterator(something(), 3)) {
+  console.log(batch)
+}
+
+// yields [1, 2, 3], [4, 5]
+for await (const batch of batchIterator(something(), 3, 1000)) {
+  console.log(batch)
+}
+
+// collects all batches into an array of arrays
+console.log(await batch(something(), 3, 1000))
+
+// creates a reusable batcher
+const batcher = batcher(3, 1000)
+for await (const batch of batcher(something())) {
+  console.log(batch)
+}
 ```
 
 ## License
